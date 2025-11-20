@@ -9,9 +9,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { AuditlogModule } from './auditlog/auditlog.module';
 import { IncidentModule } from './incident/incident.module';
+import { DepartmentModule } from './department/department.module';
+import { EscalationModule } from './escalation/escalation.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', cache: true }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -24,6 +28,8 @@ import { IncidentModule } from './incident/incident.module';
     AuthModule,
     AuditlogModule,
     IncidentModule,
+    DepartmentModule,
+    EscalationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

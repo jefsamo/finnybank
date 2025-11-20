@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class UpdateIncidentDto {
+export class CreateDepartmentDto {
   @IsString()
-  status: string;
+  name: string;
 }

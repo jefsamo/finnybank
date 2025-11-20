@@ -13,6 +13,8 @@ import {
 } from './schemas/refresh-token.schema';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { AuditlogService } from 'src/auditlog/auditlog.service';
+import { AuditLog, AuditLogSchema } from 'src/auditlog/schemas/auditlog.schema';
 
 @Module({
   imports: [
@@ -20,9 +22,15 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     UserModule,
     MongooseModule.forFeature([
       { name: RefreshToken.name, schema: RefreshTokenSchema },
+      { name: AuditLog.name, schema: AuditLogSchema },
     ]),
   ],
-  providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy],
+  providers: [
+    AuthService,
+    JwtAccessStrategy,
+    JwtRefreshStrategy,
+    AuditlogService,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}

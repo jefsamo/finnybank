@@ -1,15 +1,34 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('incident')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('csa')
 export class IncidentController {
   constructor(private readonly incidentService: IncidentService) {}
 
   @Post()
-  create(@Body() createIncidentDto: CreateIncidentDto) {
-    return this.incidentService.create(createIncidentDto);
+  create(
+    @Body() createIncidentDto: CreateIncidentDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.incidentService.create(createIncidentDto, user.userId);
   }
 
   @Get()
@@ -19,16 +38,19 @@ export class IncidentController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.incidentService.findOne(+id);
+    return this.incidentService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateIncidentDto: UpdateIncidentDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateIncidentDto: UpdateIncidentDto,
+  ) {
     return this.incidentService.update(+id, updateIncidentDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.incidentService.remove(+id);
+    return this.incidentService.remove(id);
   }
 }

@@ -6,13 +6,14 @@ import {
   HttpCode,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { JwtRefreshGuard } from '../common/guards/jwt-refresh.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -65,8 +66,11 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
   ) {
-    const result = await this.authService.login(dto);
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.toString().split(',')[0].trim() : req?.ip;
+    const result = await this.authService.login(dto, ip);
     this.setRefreshCookie(res, result.refreshToken);
     return {
       user: result.user,

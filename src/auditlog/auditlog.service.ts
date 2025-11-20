@@ -1,26 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { CreateAuditlogDto } from './dto/create-auditlog.dto';
-import { UpdateAuditlogDto } from './dto/update-auditlog.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { AuditLog, AuditLogDocument } from './schemas/auditlog.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AuditlogService {
-  create(createAuditlogDto: CreateAuditlogDto) {
-    return 'This action adds a new auditlog';
+  constructor(
+    @InjectModel(AuditLog.name)
+    private auditModel: Model<AuditLogDocument>,
+  ) {}
+  async create(createAuditlogDto: CreateAuditlogDto, ip: string | undefined) {
+    return await this.auditModel.create({ ...createAuditlogDto, ip });
   }
 
-  findAll() {
-    return `This action returns all auditlog`;
+  async findAll() {
+    return await this.auditModel.find().exec();
   }
 
   findOne(id: number) {
     return `This action returns a #${id} auditlog`;
-  }
-
-  update(id: number, updateAuditlogDto: UpdateAuditlogDto) {
-    return `This action updates a #${id} auditlog`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auditlog`;
   }
 }

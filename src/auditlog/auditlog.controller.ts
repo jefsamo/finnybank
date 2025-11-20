@@ -1,15 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
 import { AuditlogService } from './auditlog.service';
 import { CreateAuditlogDto } from './dto/create-auditlog.dto';
-import { UpdateAuditlogDto } from './dto/update-auditlog.dto';
+import type { Request } from 'express';
 
 @Controller('auditlog')
 export class AuditlogController {
   constructor(private readonly auditlogService: AuditlogService) {}
 
   @Post()
-  create(@Body() createAuditlogDto: CreateAuditlogDto) {
-    return this.auditlogService.create(createAuditlogDto);
+  create(@Body() createAuditlogDto: CreateAuditlogDto, @Req() req: Request) {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.toString().split(',')[0].trim() : req?.ip;
+    return this.auditlogService.create(createAuditlogDto, ip);
   }
 
   @Get()
@@ -20,15 +25,5 @@ export class AuditlogController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.auditlogService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuditlogDto: UpdateAuditlogDto) {
-    return this.auditlogService.update(+id, updateAuditlogDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.auditlogService.remove(+id);
   }
 }

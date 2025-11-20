@@ -16,13 +16,23 @@ import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { AuditlogService } from 'src/auditlog/auditlog.service';
+import {
+  AuditLog,
+  AuditLogDocument,
+} from 'src/auditlog/schemas/auditlog.schema';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
+    private auditlogService: AuditlogService,
     private jwt: JwtService,
     private config: ConfigService,
+    @InjectModel(AuditLog.name)
+    private auditModel: Model<AuditLogDocument>,
   ) {}
 
   private hashPassword(password: string): string {
@@ -70,6 +80,13 @@ export class AuthService {
 
     await this.usersService.setPassword(user._id.toString(), passwordHash);
 
+    // await this.auditlogService.create(
+    //   {
+    //     action: 'New user registered in',
+    //   },
+    //   'sjc',
+    // );
+
     const tokens = this.issueTokens(user);
 
     return {
@@ -92,6 +109,11 @@ export class AuthService {
 
     await this.usersService.setPassword(user._id.toString(), passwordHash);
 
+    await this.auditModel.create({
+      name: `${user.firstName} ${user.lastName}`,
+      action: 'New user registered',
+    });
+
     const tokens = this.issueTokens(user);
 
     return {
@@ -100,7 +122,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip: string | undefined) {
     const user = await this.usersService.findUserByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
     if (!user.isActive) throw new UnauthorizedException('Account is inactive');
@@ -109,6 +131,12 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = this.issueTokens(user);
+
+    await this.auditModel.create({
+      name: `${user.firstName} ${user.lastName}`,
+      action: 'User logged in',
+      ip,
+    });
 
     return {
       user,
