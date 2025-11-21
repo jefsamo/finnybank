@@ -12,7 +12,11 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   app.enableCors({
-    origin: 'https://finnybank-fe.vercel.app',
+    // origin: 'https://finnybank-fe.vercel.app',
+    origin: [
+      'https://finnybank-fe.vercel.app', // production FE
+      'http://localhost:5173', // local dev (no trailing slash)
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
