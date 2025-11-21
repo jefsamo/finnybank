@@ -12,8 +12,9 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   app.enableCors({
-    origin: ['http://localhost:5173', 'https://finnybank-fe.vercel.app'], // your frontend URL
-    methods: 'GET,POST,PUT,PATCH,DELETE',
+    origin: 'https://finnybank-fe.vercel.app',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
   });
   await app.listen(process.env.PORT ?? 3000);
