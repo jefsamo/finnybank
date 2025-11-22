@@ -18,4 +18,7 @@ export class RegisterDto {
 
   @IsString()
   phoneNumber: string;
+
+  departmentId?: string;
+  roles?: string[];
 }

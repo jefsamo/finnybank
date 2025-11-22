@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 // src/users/schemas/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -12,10 +12,13 @@ export type UserDocument = User & Document;
 export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email: string;
+  @Prop({ type: Types.ObjectId, ref: 'Department', index: true })
+  departmentId?: string;
 
   @Prop()
   passwordHash: string;
 
+  // @Prop({ type: [String], default: ['customer'] })
   @Prop({ type: [String], default: ['customer'] })
   roles: string[];
 

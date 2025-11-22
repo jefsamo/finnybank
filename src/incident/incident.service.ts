@@ -76,4 +76,133 @@ export class IncidentService {
     }
     return result;
   }
+
+  async getIncidentsSummary(from?: string, to?: string) {
+    const match: any = {};
+
+    if (from || to) {
+      match.createdAt = {};
+      if (from) match.createdAt.$gte = new Date(from);
+      if (to) match.createdAt.$lte = new Date(to);
+    }
+
+    const [result] = await this.incidentModel.aggregate([
+      { $match: match },
+
+      // Join user (to get department) – adjust collection names if needed
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'user.departmentId',
+          foreignField: '_id',
+          as: 'department',
+        },
+      },
+      { $unwind: { path: '$department', preserveNullAndEmptyArrays: true } },
+
+      {
+        $addFields: {
+          departmentName: {
+            $ifNull: ['$department.name', 'Unassigned'],
+          },
+        },
+      },
+
+      {
+        $facet: {
+          bySeverity: [
+            {
+              $group: {
+                _id: '$urgency',
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          byType: [
+            {
+              $group: {
+                _id: '$caseType',
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          byDepartment: [
+            {
+              $group: {
+                _id: '$departmentName',
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          slaCompliance: [
+            {
+              $group: {
+                _id: {
+                  $cond: [
+                    { $eq: ['$slaBreached', true] },
+                    'Breached',
+                    'Compliant',
+                  ],
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          avgResolution: [
+            {
+              $match: {
+                timeToResolve: { $ne: null },
+              },
+            },
+            {
+              $project: {
+                diffHours: {
+                  $divide: [
+                    { $subtract: ['$timeToResolve', '$createdAt'] },
+                    1000 * 60 * 60,
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                avgHours: { $avg: '$diffHours' },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const mapFacet = (facet: { _id: any; count: number }[] = []) =>
+      facet
+        .filter((x) => x._id !== null && x._id !== undefined)
+        .map((x) => ({
+          label: String(x._id),
+          count: x.count,
+        }));
+
+    const avgResolutionHours = result?.avgResolution?.[0]?.avgHours ?? 0;
+
+    return {
+      from: from ?? null,
+      to: to ?? null,
+      bySeverity: mapFacet(result?.bySeverity),
+      byType: mapFacet(result?.byType),
+      byDepartment: mapFacet(result?.byDepartment),
+      slaCompliance: mapFacet(result?.slaCompliance),
+      avgResolutionHours,
+    };
+  }
 }

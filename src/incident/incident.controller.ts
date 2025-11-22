@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { CreateIncidentDto } from './dto/create-incident.dto';
@@ -29,6 +30,10 @@ export class IncidentController {
     @CurrentUser() user: any,
   ) {
     return this.incidentService.create(createIncidentDto, user.userId);
+  }
+  @Get('incidents-summary')
+  getIncidentsSummary(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.incidentService.getIncidentsSummary(from, to);
   }
 
   @Get()

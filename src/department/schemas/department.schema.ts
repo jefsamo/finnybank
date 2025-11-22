@@ -10,7 +10,12 @@ export type DepartmentDocument = Department & Document;
 
 @Schema({ timestamps: true })
 export class Department {
-  @Prop({ type: Types.ObjectId, ref: 'User', index: true, required: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Department',
+    index: true,
+    required: true,
+  })
   name: string;
 }
 

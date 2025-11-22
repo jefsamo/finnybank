@@ -6,7 +6,7 @@ import { AuditlogService } from './auditlog.service';
 import { CreateAuditlogDto } from './dto/create-auditlog.dto';
 import type { Request } from 'express';
 
-@Controller('auditlog')
+@Controller('audit-logs')
 export class AuditlogController {
   constructor(private readonly auditlogService: AuditlogService) {}
 

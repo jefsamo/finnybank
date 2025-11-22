@@ -19,13 +19,19 @@ export class UsersService {
   ) {}
 
   async createUser(data: CreateUserDto): Promise<User> {
-    const { email, firstName, lastName } = data;
+    const { email, firstName, lastName, departmentId, roles } = data;
+    // console.log(data);
     const created = new this.userModel({
       email,
       firstName,
       lastName,
+      departmentId,
+      roles,
     });
+    // console.log(created);
+
     return created.save();
+    // return created;
   }
 
   async findUserById(id: string): Promise<User | null> {

@@ -77,6 +77,7 @@ export class AuthService {
       password: dto.password,
       firstName: dto.firstName,
       lastName: dto.lastName,
+      roles: dto.roles!,
     });
 
     await this.usersService.setPassword(user._id.toString(), passwordHash);
@@ -106,6 +107,8 @@ export class AuthService {
       password: dto.password,
       firstName: dto.firstName,
       lastName: dto.lastName,
+      departmentId: dto.departmentId,
+      roles: dto.roles!,
     });
 
     await this.usersService.setPassword(user._id.toString(), passwordHash);
