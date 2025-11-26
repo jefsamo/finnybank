@@ -20,7 +20,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('incident')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('csa')
+@Roles('csa', 'admin', 'supervisor', 'auditor')
 export class IncidentController {
   constructor(private readonly incidentService: IncidentService) {}
 
