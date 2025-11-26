@@ -94,9 +94,9 @@ IncidentSchema.pre<IncidentDocument>('save', function (next) {
   // 1) timeToResolve on creation (or if not set)
   if (!this.timeToResolve && this.urgency) {
     const urgencyToHours: Record<string, number> = {
-      low: 72,
-      medium: 48,
-      high: 24,
+      low: 0.17,
+      medium: 0.1,
+      high: 0.05,
     };
 
     const hoursToAdd = urgencyToHours[this.urgency.toLowerCase()] ?? 48; // default 48h
