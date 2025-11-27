@@ -9,6 +9,10 @@ export class CreateIncidentDto {
   userId: string;
 
   @IsString()
+  @IsOptional()
+  departmentId: string;
+
+  @IsString()
   customerName: string;
 
   @IsString()

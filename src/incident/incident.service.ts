@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -13,16 +16,40 @@ import { UpdateIncidentDto } from './dto/update-incident.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Incident, IncidentDocument } from './schemas/incident.schema';
 import { Model } from 'mongoose';
+import {
+  Department,
+  DepartmentDocument,
+} from '../department/schemas/department.schema';
 
 @Injectable()
 export class IncidentService {
   constructor(
     @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
+    @InjectModel(Department.name)
+    private departmentModel: Model<DepartmentDocument>,
   ) {}
-  create(createIncidentDto: CreateIncidentDto, userId: string) {
-    const incident = new this.incidentModel(createIncidentDto);
-    incident.referenceId = Number(this.generateTenDigitNumber());
-    incident.userId = userId;
+  async create(createIncidentDto: CreateIncidentDto, userId: string) {
+    let departmentId = createIncidentDto.departmentId;
+
+    if (!departmentId) {
+      const department = await this.departmentModel.findOne({
+        name: new RegExp(`^${createIncidentDto.productService}$`, 'i'),
+      });
+
+      if (!department) {
+        throw new BadRequestException(
+          `No department found for product: ${createIncidentDto.productService}`,
+        );
+      }
+
+      departmentId = `${department._id}`;
+    }
+
+    const incident = new this.incidentModel({
+      ...createIncidentDto,
+      departmentId,
+    });
+
     return incident.save();
   }
 
@@ -89,21 +116,27 @@ export class IncidentService {
     const [result] = await this.incidentModel.aggregate([
       { $match: match },
 
-      // Join user (to get department) – adjust collection names if needed
+      // 💡 FIX: Convert departmentId string to ObjectId for correct lookup.
+      // This is necessary if departmentId in 'incidents' is a string
+      // but _id in 'departments' is an ObjectId.
       {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'user',
+        $addFields: {
+          departmentObjectId: {
+            $cond: [
+              // Only attempt conversion if departmentId is not null
+              { $ne: ['$departmentId', null] },
+              { $toObjectId: '$departmentId' },
+              null,
+            ],
+          },
         },
       },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
 
+      // 🔹 Join department using the converted ObjectId field
       {
         $lookup: {
           from: 'departments',
-          localField: 'user.departmentId',
+          localField: 'departmentObjectId', // <-- Using the converted field
           foreignField: '_id',
           as: 'department',
         },
@@ -112,12 +145,14 @@ export class IncidentService {
 
       {
         $addFields: {
+          // Use the department name, or 'Unassigned' as a fallback label
           departmentName: {
             $ifNull: ['$department.name', 'Unassigned'],
           },
         },
       },
 
+      // 🔍 Generate all summary facets in one go
       {
         $facet: {
           bySeverity: [
@@ -144,6 +179,17 @@ export class IncidentService {
               },
             },
           ],
+
+          // New Facet: Group incidents by department and collect the full documents
+          incidentsByDepartment: [
+            {
+              $group: {
+                _id: '$departmentName',
+                incidents: { $push: '$$ROOT' },
+              },
+            },
+          ],
+
           slaCompliance: [
             {
               $group: {
@@ -160,16 +206,18 @@ export class IncidentService {
           ],
           avgResolution: [
             {
+              // Only consider incidents with a resolved time
               $match: {
                 timeToResolve: { $ne: null },
               },
             },
             {
               $project: {
+                // Calculate difference in hours
                 diffHours: {
                   $divide: [
                     { $subtract: ['$timeToResolve', '$createdAt'] },
-                    1000 * 60 * 60,
+                    1000 * 60 * 60, // milliseconds in an hour
                   ],
                 },
               },
@@ -185,6 +233,7 @@ export class IncidentService {
       },
     ]);
 
+    // --- Helper Functions for Mapping Results ---
     const mapFacet = (facet: { _id: any; count: number }[] = []) =>
       facet
         .filter((x) => x._id !== null && x._id !== undefined)
@@ -193,14 +242,28 @@ export class IncidentService {
           count: x.count,
         }));
 
+    const mapIncidentsByDepartment = (
+      facet: { _id: string; incidents: any[] }[] = [],
+    ) =>
+      facet
+        .filter((x) => x._id !== null && x._id !== undefined)
+        .map((x) => ({
+          departmentName: x._id,
+          incidents: x.incidents,
+        }));
+
     const avgResolutionHours = result?.avgResolution?.[0]?.avgHours ?? 0;
 
+    // --- Return final summary object ---
     return {
       from: from ?? null,
       to: to ?? null,
       bySeverity: mapFacet(result?.bySeverity),
       byType: mapFacet(result?.byType),
       byDepartment: mapFacet(result?.byDepartment),
+      incidentsByDepartment: mapIncidentsByDepartment(
+        result?.incidentsByDepartment,
+      ),
       slaCompliance: mapFacet(result?.slaCompliance),
       avgResolutionHours,
     };

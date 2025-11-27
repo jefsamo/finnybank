@@ -60,6 +60,7 @@ export class IncidentsEscalationJob {
 
         // mark on the incident so we never pick it again
         incident.hasEscalation = true;
+        incident.status = 'escalated';
         incident.slaBreached = true; // optional but usually true here
         await incident.save();
 

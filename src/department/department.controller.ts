@@ -7,7 +7,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('department')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'csa')
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 

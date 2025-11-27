@@ -101,7 +101,7 @@ IncidentSchema.pre<IncidentDocument>('save', function (next) {
 
     const hoursToAdd = urgencyToHours[this.urgency.toLowerCase()] ?? 48; // default 48h
 
-    this.timeToResolve = new Date(now.getTime() + 0.1 * 60 * 60 * 1000);
+    this.timeToResolve = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
   }
 
   // 2) If status just became 'resolved', set resolvedAt + timeTakenToResolve

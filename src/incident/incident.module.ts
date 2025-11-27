@@ -8,11 +8,16 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Incident, IncidentSchema } from './schemas/incident.schema';
 import { EscalationModule } from 'src/escalation/escalation.module';
 import { IncidentsEscalationJob } from './incident-escalation.job';
+import {
+  Department,
+  DepartmentSchema,
+} from '../department/schemas/department.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Incident.name, schema: IncidentSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
     EscalationModule,
   ],
