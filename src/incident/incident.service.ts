@@ -50,6 +50,9 @@ export class IncidentService {
       departmentId,
     });
 
+    incident.referenceId = Number(this.generateTenDigitNumber());
+    incident.userId = userId;
+
     return incident.save();
   }
 
@@ -116,14 +119,10 @@ export class IncidentService {
     const [result] = await this.incidentModel.aggregate([
       { $match: match },
 
-      // 💡 FIX: Convert departmentId string to ObjectId for correct lookup.
-      // This is necessary if departmentId in 'incidents' is a string
-      // but _id in 'departments' is an ObjectId.
       {
         $addFields: {
           departmentObjectId: {
             $cond: [
-              // Only attempt conversion if departmentId is not null
               { $ne: ['$departmentId', null] },
               { $toObjectId: '$departmentId' },
               null,
@@ -132,11 +131,10 @@ export class IncidentService {
         },
       },
 
-      // 🔹 Join department using the converted ObjectId field
       {
         $lookup: {
           from: 'departments',
-          localField: 'departmentObjectId', // <-- Using the converted field
+          localField: 'departmentObjectId',
           foreignField: '_id',
           as: 'department',
         },
@@ -254,7 +252,6 @@ export class IncidentService {
 
     const avgResolutionHours = result?.avgResolution?.[0]?.avgHours ?? 0;
 
-    // --- Return final summary object ---
     return {
       from: from ?? null,
       to: to ?? null,
